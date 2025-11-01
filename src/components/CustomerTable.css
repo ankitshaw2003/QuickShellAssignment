@@ -1,0 +1,573 @@
+/**
+ * PROFESSIONAL CUSTOMER TABLE STYLES
+ * Clean, modern design with excellent readability
+ */
+
+/* ============================================================================
+   BASE STYLES - CLEAN & PROFESSIONAL
+   ============================================================================ */
+
+.table-wrapper {
+  width: 100%;
+  height: calc(100vh - 200px);
+  min-height: 500px;
+  background-color: #ffffff;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* Performance optimizations */
+* {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.table-body-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  will-change: scroll-position;
+  transform: translateZ(0);
+  -webkit-overflow-scrolling: touch;
+  background-color: #ffffff;
+}
+
+/* ============================================================================
+   DESKTOP TABLE STYLES - PROFESSIONAL & CLEAN
+   ============================================================================ */
+
+.table-header-container {
+  flex-shrink: 0;
+  overflow: hidden;
+  background-color: #2c3e50;
+  border-bottom: 2px solid #34495e;
+  z-index: 10;
+}
+
+.customer-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  table-layout: fixed;
+}
+
+.header-table thead th {
+  padding: 16px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  user-select: none;
+  background-color: #2c3e50;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.header-table th.sortable {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.header-table th.sortable:hover {
+  background-color: #34495e;
+}
+
+.body-table tbody tr {
+  border-bottom: 1px solid #e8e8e8;
+  height: 60px;
+  will-change: transform;
+  transform: translateZ(0);
+  transition: background-color 0.15s ease;
+}
+
+.body-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.body-table tbody tr:nth-child(even) {
+  background-color: #fafbfc;
+}
+
+.body-table tbody tr:nth-child(even):hover {
+  background-color: #f8f9fa;
+}
+
+.body-table td {
+  padding: 12px 16px;
+  color: #2c3e50;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14px;
+}
+
+.name-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.email-cell {
+  color: #3498db;
+  font-weight: 500;
+}
+
+.score-badge {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 13px;
+  display: inline-block;
+  min-width: 45px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.score-0 {
+  background-color: #e74c3c;
+  color: #ffffff;
+}
+
+.score-1 {
+  background-color: #f39c12;
+  color: #ffffff;
+}
+
+.score-2 {
+  background-color: #2ecc71;
+  color: #ffffff;
+}
+
+.score-3 {
+  background-color: #3498db;
+  color: #ffffff;
+}
+
+/* Professional scrollbar */
+.table-body-container::-webkit-scrollbar {
+  width: 10px;
+}
+
+.table-body-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.table-body-container::-webkit-scrollbar-thumb {
+  background: #bdc3c7;
+  border-radius: 5px;
+}
+
+.table-body-container::-webkit-scrollbar-thumb:hover {
+  background: #95a5a6;
+}
+
+/* ============================================================================
+   TABLET STYLES (768px - 1023px)
+   ============================================================================ */
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .table-wrapper.tablet .customer-table {
+    font-size: 13px;
+  }
+  
+  .table-wrapper.tablet .header-table thead th {
+    padding: 14px 12px;
+    font-size: 12px;
+  }
+  
+  .table-wrapper.tablet .body-table tbody tr {
+    height: 70px;
+  }
+  
+  .table-wrapper.tablet .body-table td {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  
+  .table-wrapper.tablet .avatar {
+    width: 34px;
+    height: 34px;
+    font-size: 13px;
+  }
+  
+  .table-wrapper.tablet .name-cell {
+    gap: 10px;
+  }
+  
+  .table-wrapper.tablet .score-badge {
+    padding: 5px 12px;
+    font-size: 12px;
+  }
+  
+  .table-wrapper.tablet .table-body-container::-webkit-scrollbar {
+    width: 8px;
+  }
+}
+
+/* ============================================================================
+   MOBILE STYLES (< 768px) - PROFESSIONAL CARD LAYOUT
+   ============================================================================ */
+
+@media (max-width: 767px) {
+  .table-wrapper.mobile {
+    height: calc(100vh - 160px);
+    box-shadow: none;
+  }
+  
+  /* Mobile sort controls */
+  .mobile-sort-controls {
+    padding: 16px;
+    background-color: #2c3e50;
+    border-bottom: 2px solid #34495e;
+  }
+  
+  .mobile-sort-select {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    border-radius: 8px;
+    background-color: white;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%232c3e50' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    padding-right: 40px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    color: #2c3e50;
+  }
+  
+  .mobile-sort-select:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.3);
+  }
+  
+  /* Mobile card container */
+  .mobile-card-container {
+    flex: 1;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 12px;
+    background-color: #f5f6fa;
+  }
+  
+  /* Professional mobile cards */
+  .mobile-card {
+    background: white;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: box-shadow 0.2s ease, transform 0.1s ease;
+  }
+  
+  .mobile-card:active {
+    transform: scale(0.99);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  }
+  
+  .mobile-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #f0f0f0;
+  }
+  
+  .mobile-card-header .avatar {
+    width: 50px;
+    height: 50px;
+    font-size: 18px;
+  }
+  
+  .mobile-card-title {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .mobile-card-title h3 {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #2c3e50;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .mobile-id {
+    font-size: 12px;
+    color: #7f8c8d;
+    font-weight: 500;
+  }
+  
+  .mobile-card-header .score-badge {
+    flex-shrink: 0;
+    font-size: 14px;
+    padding: 6px 12px;
+  }
+  
+  /* Mobile card body */
+  .mobile-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .mobile-info-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+  }
+  
+  .mobile-label {
+    flex-shrink: 0;
+    font-weight: 600;
+    color: #7f8c8d;
+    min-width: 110px;
+    font-size: 13px;
+  }
+  
+  .mobile-value {
+    color: #2c3e50;
+    word-break: break-word;
+    flex: 1;
+    font-size: 14px;
+  }
+  
+  /* Clean mobile scrollbar */
+  .mobile-card-container::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .mobile-card-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .mobile-card-container::-webkit-scrollbar-thumb {
+    background: #bdc3c7;
+    border-radius: 2px;
+  }
+}
+
+/* ============================================================================
+   EXTRA SMALL MOBILE (< 375px)
+   ============================================================================ */
+
+@media (max-width: 374px) {
+  .mobile-card {
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+  
+  .mobile-card-header .avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 16px;
+  }
+  
+  .mobile-card-title h3 {
+    font-size: 15px;
+  }
+  
+  .mobile-label {
+    min-width: 95px;
+    font-size: 12px;
+  }
+  
+  .mobile-value {
+    font-size: 13px;
+  }
+  
+  .mobile-sort-select {
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+}
+
+/* ============================================================================
+   LARGE DESKTOP (> 1440px)
+   ============================================================================ */
+
+@media (min-width: 1441px) {
+  .customer-table {
+    font-size: 15px;
+  }
+  
+  .header-table thead th {
+    padding: 18px 20px;
+    font-size: 14px;
+  }
+  
+  .body-table td {
+    padding: 14px 20px;
+    font-size: 15px;
+  }
+  
+  .avatar {
+    width: 42px;
+    height: 42px;
+    font-size: 16px;
+  }
+  
+  .score-badge {
+    padding: 7px 16px;
+    font-size: 14px;
+  }
+}
+
+/* ============================================================================
+   PRINT STYLES
+   ============================================================================ */
+
+@media print {
+  .table-wrapper {
+    height: auto !important;
+    box-shadow: none;
+  }
+  
+  .table-header-container {
+    background-color: #f8f9fa !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .header-table thead th {
+    background-color: #f8f9fa !important;
+    color: #000 !important;
+    border: 1px solid #ddd !important;
+  }
+  
+  .table-body-container {
+    overflow: visible !important;
+    height: auto !important;
+  }
+  
+  .body-table tbody tr {
+    page-break-inside: avoid;
+    border: 1px solid #ddd;
+  }
+  
+  .mobile-sort-controls {
+    display: none;
+  }
+  
+  .mobile-card {
+    page-break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+}
+
+/* ============================================================================
+   DARK MODE SUPPORT
+   ============================================================================ */
+
+@media (prefers-color-scheme: dark) {
+  .table-wrapper {
+    background-color: #1a1a1a;
+  }
+  
+  .table-header-container {
+    background-color: #2d3748;
+    border-bottom-color: #4a5568;
+  }
+  
+  .header-table thead th {
+    background-color: #2d3748;
+    color: #e2e8f0;
+  }
+  
+  .header-table th.sortable:hover {
+    background-color: #4a5568;
+  }
+  
+  .body-table tbody tr {
+    border-bottom-color: #2d3748;
+  }
+  
+  .body-table tbody tr:nth-child(even) {
+    background-color: #1e1e1e;
+  }
+  
+  .body-table tbody tr:hover,
+  .body-table tbody tr:nth-child(even):hover {
+    background-color: #2d3748;
+  }
+  
+  .body-table td {
+    color: #e2e8f0;
+  }
+  
+  .table-body-container {
+    background-color: #1a1a1a;
+  }
+  
+  .mobile-card {
+    background-color: #2d3748;
+    color: #e2e8f0;
+  }
+  
+  .mobile-card-title h3 {
+    color: #e2e8f0;
+  }
+  
+  .mobile-label {
+    color: #a0aec0;
+  }
+  
+  .mobile-value {
+    color: #e2e8f0;
+  }
+  
+  .mobile-sort-select {
+    background-color: #2d3748;
+    color: #e2e8f0;
+    border-color: #4a5568;
+  }
+  
+  .mobile-sort-controls {
+    background-color: #2d3748;
+    border-bottom-color: #4a5568;
+  }
+  
+  .mobile-card-container {
+    background-color: #1a1a1a;
+  }
+  
+  .table-body-container::-webkit-scrollbar-track {
+    background: #2d3748;
+  }
+  
+  .table-body-container::-webkit-scrollbar-thumb {
+    background: #4a5568;
+  }
+  
+  .table-body-container::-webkit-scrollbar-thumb:hover {
+    background: #718096;
+  }
+}
