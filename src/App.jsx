@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import CustomerTable from './components/CustomerTable';
 import SearchBar from './components/SearchBar';
 import FilterDropdown from './components/FilterDropdown';
 import { useDebounce } from './hooks/useDebounce';
-import { 
-  initializeDatabase, 
-  populateDatabase, 
+import {
+  initializeDatabase,
+  populateDatabase,
   isDatabasePopulated,
   isIndexedDBAvailable,
-  generateCustomersInMemory
+  generateCustomersInMemory,
+  clearDatabase
 } from './utils/dataGenerator';
 import './App.css';
 
@@ -31,30 +32,36 @@ function App() {
   // ============================================================================
   // STATE MANAGEMENT
   // ============================================================================
-  
+
   // Array holding all customer records (up to 1 million)
   const [customers, setCustomers] = useState([]);
-  
+
   // Current search query entered by user
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // Current sort configuration: which column and direction (asc/desc)
   const [sortConfig, setSortConfig] = useState({ column: 'id', direction: 'asc' });
-  
+
   // Loading state: true during initial data generation/loading
   const [loading, setLoading] = useState(true);
-  
+
   // Progress percentage (0-100) for data generation
   const [progress, setProgress] = useState(0);
-  
+
   // Error message if something goes wrong during initialization
   const [error, setError] = useState(null);
-  
+
   // Flag indicating if we're using memory storage instead of IndexedDB
   const [useMemoryStorage, setUseMemoryStorage] = useState(false);
-  
+
   // Reference to the IndexedDB database instance
   const [db, setDb] = useState(null);
+
+  // Flag indicating if data is still being generated in background
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  // Ref to track if first batch has been shown (to avoid closure issues)
+  const firstBatchShown = useRef(false);
 
   // Debounced search term: waits 250ms after user stops typing before updating
   // This prevents excessive filtering operations while user is typing
@@ -80,9 +87,10 @@ function App() {
      */
     const initData = async () => {
       console.log('=== Starting data initialization ===');
-      
+
       try {
         setError(null);
+        firstBatchShown.current = false; // Reset for this initialization
         
         // STEP 1: Check if IndexedDB is supported by the browser
         console.log('Checking IndexedDB availability...');
@@ -90,17 +98,30 @@ function App() {
           // IndexedDB not available (incognito mode, old browser, etc.)
           console.warn('❌ IndexedDB not available, using memory storage');
           setUseMemoryStorage(true);
-          
-          // Generate all 1M records directly in memory
-          console.log('Generating 1M records in memory...');
-          const memoryCustomers = generateCustomersInMemory(1000000, (processed, total) => {
-            // Update progress bar as records are generated
-            setProgress(Math.floor((processed / total) * 100));
-          });
-          
+          setIsGenerating(true);
+
+          // Generate records in memory with progressive loading
+          console.log('Generating 1M records in memory with progressive loading...');
+          const memoryCustomers = await generateCustomersInMemory(
+            1000000,
+            (processed, total) => {
+              // Update progress bar as records are generated
+              setProgress(Math.floor((processed / total) * 100));
+            },
+            (batchCustomers) => {
+              // Display each batch immediately as it's generated
+              setCustomers(prev => [...prev, ...batchCustomers]);
+
+              // Show the UI after first batch is ready
+              if (!firstBatchShown.current) {
+                firstBatchShown.current = true;
+                setLoading(false);
+              }
+            }
+          );
+
           console.log(`✅ Generated ${memoryCustomers.length} customers in memory`);
-          setCustomers(memoryCustomers);
-          setLoading(false);
+          setIsGenerating(false);
           return;
         }
 
@@ -120,24 +141,43 @@ function App() {
         if (!isPopulated) {
           // Database is empty, need to generate the 1M records
           console.log('📝 Populating database with 1M records...');
-          await populateDatabase(database, (processed, total) => {
-            // Update progress bar as batches are written to database
-            const percent = Math.floor((processed / total) * 100);
-            setProgress(percent);
-            console.log(`Progress: ${percent}%`);
-          });
-          console.log('✅ Database populated successfully');
-        } else {
-          // Data already exists, skip generation
-          console.log('ℹ️ Database already contains data');
-        }
+          setIsGenerating(true);
 
-        // STEP 4: Load all customers from database into memory for display
-        console.log('Loading customers from database...');
-        await loadCustomers(database);
-        console.log('✅ Customers loaded successfully');
-        
-        setLoading(false);
+          // Clear any partial data first (in case of previous failed attempts)
+          await clearDatabase(database);
+
+          // Start populating database with progressive loading
+          populateDatabase(
+            database,
+            (processed, total) => {
+              // Update progress bar as batches are written to database
+              const percent = Math.floor((processed / total) * 100);
+              setProgress(percent);
+              console.log(`Progress: ${percent}%`);
+            },
+            (batchCustomers) => {
+              // Display each batch immediately as it's generated
+              setCustomers(prev => [...prev, ...batchCustomers]);
+
+              // Show the UI after first batch is ready
+              if (!firstBatchShown.current) {
+                firstBatchShown.current = true;
+                setLoading(false);
+              }
+            }
+          ).then(() => {
+            console.log('✅ Database populated successfully');
+            setIsGenerating(false);
+          }).catch(err => {
+            console.error('Error during population:', err);
+            setIsGenerating(false);
+            throw err;
+          });
+        } else {
+          // Data already exists, load it progressively
+          console.log('ℹ️ Database already contains data, loading progressively...');
+          await loadCustomersProgressively(database);
+        }
       } catch (err) {
         // Something went wrong - log detailed error information
         console.error('❌ Error initializing data:', err);
@@ -152,23 +192,36 @@ function App() {
         // FALLBACK: Try memory storage if IndexedDB failed
         console.log('🔄 Falling back to memory storage...');
         setUseMemoryStorage(true);
-        
+        setIsGenerating(true);
+
         try {
-          // Generate records in memory as backup plan
-          const memoryCustomers = generateCustomersInMemory(1000000, (processed, total) => {
-            setProgress(Math.floor((processed / total) * 100));
-          });
-          
+          // Generate records in memory as backup plan with progressive loading
+          const memoryCustomers = await generateCustomersInMemory(
+            1000000,
+            (processed, total) => {
+              setProgress(Math.floor((processed / total) * 100));
+            },
+            (batchCustomers) => {
+              // Display each batch immediately as it's generated
+              setCustomers(prev => [...prev, ...batchCustomers]);
+
+              // Show the UI after first batch is ready
+              if (!firstBatchShown.current) {
+                firstBatchShown.current = true;
+                setLoading(false);
+              }
+            }
+          );
+
           console.log(`✅ Fallback successful: ${memoryCustomers.length} customers`);
-          setCustomers(memoryCustomers);
           setError(null);
+          setIsGenerating(false);
         } catch (memError) {
           // Even memory generation failed - this is a critical error
           console.error('❌ Memory generation also failed:', memError);
           setError('Failed to generate customer data');
+          setIsGenerating(false);
         }
-        
-        setLoading(false);
       }
     };
 
@@ -181,17 +234,17 @@ function App() {
   
   /**
    * Load all customer records from IndexedDB into React state
-   * 
+   *
    * @param {IDBDatabase} database - The IndexedDB database instance
    * @returns {Promise} Resolves when all records are loaded
-   * 
+   *
    * This reads all 1M records at once using getAll().
    * For production apps with truly massive datasets, you might want
    * to implement pagination or virtual scrolling instead.
    */
   const loadCustomers = async (database) => {
     console.log('Starting loadCustomers...');
-    
+
     return new Promise((resolve, reject) => {
       try {
         if (!database) {
@@ -203,7 +256,7 @@ function App() {
         // Create a read-only transaction to access the data
         console.log('Creating transaction...');
         const transaction = database.transaction(['customers'], 'readonly');
-        
+
         transaction.onerror = (event) => {
           console.error('❌ Transaction error:', event.target.error);
         };
@@ -211,18 +264,18 @@ function App() {
         // Access the 'customers' object store (like a table in SQL)
         const objectStore = transaction.objectStore('customers');
         console.log('Getting all records...');
-        
+
         // Request all records at once (works well for 1M records in modern browsers)
         const request = objectStore.getAll();
 
         request.onsuccess = () => {
           const result = request.result;
           console.log(`✅ Loaded ${result.length} customers from IndexedDB`);
-          
+
           if (result.length === 0) {
             console.warn('⚠️ Database returned 0 records! This might be an issue.');
           }
-          
+
           // Update React state with loaded customers
           setCustomers(result);
           resolve();
@@ -237,6 +290,85 @@ function App() {
         reject(error);
       }
     });
+  };
+
+  /**
+   * Load customer records progressively from IndexedDB for better perceived performance
+   * Uses IDBKeyRange to efficiently load batches without skipping
+   *
+   * @param {IDBDatabase} database - The IndexedDB database instance
+   * @returns {Promise} Resolves when all records are loaded
+   */
+  const loadCustomersProgressively = async (database) => {
+    console.log('Starting progressive load from IndexedDB...');
+
+    try {
+      if (!database) {
+        console.error('❌ Database is null or undefined');
+        throw new Error('Database is null');
+      }
+
+      const BATCH_SIZE = 5000;
+      let currentId = 1; // Start from ID 1
+      let totalLoaded = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        // Load one batch per transaction using key range
+        const batch = await new Promise((resolve, reject) => {
+          const transaction = database.transaction(['customers'], 'readonly');
+          const objectStore = transaction.objectStore('customers');
+
+          // Create a key range for this batch
+          const keyRange = IDBKeyRange.bound(currentId, currentId + BATCH_SIZE - 1);
+          const cursorRequest = objectStore.openCursor(keyRange);
+
+          const batchData = [];
+
+          cursorRequest.onsuccess = (event) => {
+            const cursor = event.target.result;
+
+            if (cursor) {
+              batchData.push(cursor.value);
+              cursor.continue();
+            } else {
+              // No more records in this range
+              resolve(batchData);
+            }
+          };
+
+          cursorRequest.onerror = (event) => {
+            console.error('❌ Cursor error:', event.target.error);
+            reject(new Error(`Cursor error: ${event.target.error?.message || 'Unknown error'}`));
+          };
+        });
+
+        if (batch.length > 0) {
+          // Update state with this batch
+          setCustomers(prev => [...prev, ...batch]);
+          totalLoaded += batch.length;
+          currentId += BATCH_SIZE;
+
+          // Show UI after first batch
+          if (totalLoaded === batch.length) {
+            setLoading(false);
+          }
+
+          console.log(`Loaded ${totalLoaded} customers so far...`);
+
+          // Yield to browser to keep UI responsive
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
+
+        // Check if we have more data
+        hasMore = batch.length === BATCH_SIZE;
+      }
+
+      console.log(`✅ Loaded all ${totalLoaded} customers progressively`);
+    } catch (error) {
+      console.error('❌ Exception in loadCustomersProgressively:', error);
+      throw error;
+    }
   };
 
   // ============================================================================
@@ -435,25 +567,38 @@ function App() {
           Showing {sortedCustomers.length.toLocaleString()} of {customers.length.toLocaleString()} customers
           {/* Badge indicating memory storage is being used instead of IndexedDB */}
           {useMemoryStorage && <span className="storage-badge">⚡ Memory Storage</span>}
+          {/* Show loading indicator when data is still being generated */}
+          {isGenerating && (
+            <span className="loading-badge" title={`${progress}% complete`}>
+              ⏳ Loading more... {progress}%
+            </span>
+          )}
         </p>
       </header>
 
       {/* Search bar and filter controls */}
       <div className="controls">
-        <SearchBar 
-          searchTerm={searchTerm} 
-          onSearchChange={handleSearchChange} 
+        <SearchBar
+          searchTerm={searchTerm}
+          onSearchChange={handleSearchChange}
         />
         <FilterDropdown />
       </div>
 
       {/* Main data table showing sorted and filtered customers */}
-      <CustomerTable 
+      <CustomerTable
         data={sortedCustomers}
         searchTerm={debouncedSearchTerm}
         onSortChange={handleSortChange}
         sortConfig={sortConfig}
       />
+
+      {/* Progress bar at bottom when still loading */}
+      {isGenerating && (
+        <div className="bottom-progress-bar">
+          <div className="progress-fill" style={{ width: `${progress}%` }}></div>
+        </div>
+      )}
     </div>
   );
 }

@@ -136,41 +136,59 @@ export const initializeDatabase = () => {
 };
 
 /**
- * Populate database with customer records in batches
+ * Populate database with customer records in batches with progressive loading
+ * @param {IDBDatabase} db - The IndexedDB database instance
+ * @param {Function} onProgress - Callback for progress updates (processed, total)
+ * @param {Function} onBatchComplete - Callback when each batch is ready to display (customers array)
  */
-export const populateDatabase = async (db, onProgress) => {
-  const BATCH_SIZE = 10000;
+export const populateDatabase = async (db, onProgress, onBatchComplete) => {
+  const BATCH_SIZE = 5000; // Smaller batch size for faster initial display
   const TOTAL_RECORDS = 1000000;
   let processed = 0;
 
   try {
     for (let batch = 0; batch < TOTAL_RECORDS / BATCH_SIZE; batch++) {
-      const transaction = db.transaction(['customers'], 'readwrite');
-      const objectStore = transaction.objectStore('customers');
-
+      // Pre-generate the batch of customers before starting transaction
+      const batchCustomers = [];
       for (let i = 0; i < BATCH_SIZE; i++) {
         const id = batch * BATCH_SIZE + i + 1;
         const customer = generateCustomer(id);
-        objectStore.add(customer);
+        batchCustomers.push(customer);
       }
 
+      // Now write the batch to IndexedDB in a single transaction
       await new Promise((resolve, reject) => {
+        const transaction = db.transaction(['customers'], 'readwrite');
+        const objectStore = transaction.objectStore('customers');
+
+        // Add all customers in this batch
+        for (const customer of batchCustomers) {
+          objectStore.add(customer);
+        }
+
         transaction.oncomplete = () => {
           processed += BATCH_SIZE;
           if (onProgress) onProgress(processed, TOTAL_RECORDS);
+
+          // Notify that this batch is ready to be displayed
+          if (onBatchComplete) onBatchComplete(batchCustomers);
+
           resolve();
         };
-        
+
         transaction.onerror = (event) => {
           console.error('Transaction error:', event.target.error);
           reject(new Error(`Transaction error: ${event.target.error?.message || 'Unknown error'}`));
         };
-        
+
         transaction.onabort = (event) => {
           console.error('Transaction aborted:', event.target.error);
           reject(new Error('Transaction aborted'));
         };
       });
+
+      // Yield to browser event loop after each batch to keep UI responsive
+      await new Promise(resolve => setTimeout(resolve, 0));
     }
   } catch (error) {
     console.error('Error populating database:', error);
@@ -193,7 +211,7 @@ export const isDatabasePopulated = async (db) => {
         console.log(`Database contains ${count} records`);
         resolve(count >= 1000000);
       };
-      
+
       countRequest.onerror = (event) => {
         console.error('Count error:', event.target.error);
         reject(new Error(`Count error: ${event.target.error?.message || 'Unknown error'}`));
@@ -206,19 +224,64 @@ export const isDatabasePopulated = async (db) => {
 };
 
 /**
- * Generate customers in memory (fallback if IndexedDB fails)
+ * Clear all data from the database
  */
-export const generateCustomersInMemory = (count = 1000000, onProgress) => {
-  const customers = [];
-  const BATCH_SIZE = 10000;
-  
-  for (let i = 1; i <= count; i++) {
-    customers.push(generateCustomer(i));
-    
-    if (i % BATCH_SIZE === 0 && onProgress) {
-      onProgress(i, count);
+export const clearDatabase = async (db) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const transaction = db.transaction(['customers'], 'readwrite');
+      const objectStore = transaction.objectStore('customers');
+      const clearRequest = objectStore.clear();
+
+      clearRequest.onsuccess = () => {
+        console.log('✅ Database cleared successfully');
+        resolve();
+      };
+
+      clearRequest.onerror = (event) => {
+        console.error('Clear error:', event.target.error);
+        reject(new Error(`Clear error: ${event.target.error?.message || 'Unknown error'}`));
+      };
+    } catch (error) {
+      console.error('Exception in clearDatabase:', error);
+      reject(error);
     }
+  });
+};
+
+/**
+ * Generate customers in memory with progressive loading (fallback if IndexedDB fails)
+ * @param {number} count - Total number of customers to generate
+ * @param {Function} onProgress - Callback for progress updates (processed, total)
+ * @param {Function} onBatchComplete - Callback when each batch is ready to display (customers array)
+ * @returns {Promise<Array>} Promise that resolves with all customers when complete
+ */
+export const generateCustomersInMemory = async (count = 1000000, onProgress, onBatchComplete) => {
+  const BATCH_SIZE = 5000; // Smaller batch size for faster initial display
+  const allCustomers = [];
+
+  for (let batchStart = 1; batchStart <= count; batchStart += BATCH_SIZE) {
+    const batchEnd = Math.min(batchStart + BATCH_SIZE - 1, count);
+    const batchCustomers = [];
+
+    for (let i = batchStart; i <= batchEnd; i++) {
+      batchCustomers.push(generateCustomer(i));
+    }
+
+    allCustomers.push(...batchCustomers);
+
+    if (onProgress) {
+      onProgress(batchEnd, count);
+    }
+
+    // Notify that this batch is ready to be displayed
+    if (onBatchComplete) {
+      onBatchComplete(batchCustomers);
+    }
+
+    // Yield to browser event loop after each batch to keep UI responsive
+    await new Promise(resolve => setTimeout(resolve, 0));
   }
-  
-  return customers;
+
+  return allCustomers;
 };

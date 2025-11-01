@@ -36,6 +36,38 @@ body {
 .record-count {
   font-size: 14px;
   color: #666;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.storage-badge,
+.loading-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.storage-badge {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.loading-badge {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 
 /* Controls Section */
@@ -228,6 +260,24 @@ body {
   height: 100%;
   background-color: #0066cc;
   transition: width 0.3s ease;
+}
+
+/* Bottom Progress Bar (for progressive loading) */
+.bottom-progress-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background-color: #e0e0e0;
+  z-index: 1000;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.bottom-progress-bar .progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0066cc, #00a8ff);
+  box-shadow: 0 0 10px rgba(0, 102, 204, 0.5);
 }
 
 /* Responsive Design */
